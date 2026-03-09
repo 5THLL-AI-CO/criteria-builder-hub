@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 const Navbar = () => {
+  const navigate = useNavigate();
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
