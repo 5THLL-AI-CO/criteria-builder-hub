@@ -46,8 +46,13 @@ const Navbar = () => {
           >
             The Builder Collective
           </button>
+          <button
+            onClick={() => navigate("/es")}
+            className="text-text-tertiary hover:text-text-primary transition-colors text-sm font-mono"
+          >
+            ES
+          </button>
         </div>
-
         {/* CTA Button */}
         <button
           onClick={() => scrollToSection("builder-form")}
