@@ -138,8 +138,8 @@ function AgentApp() {
     }
     setLoading1(true); setAlert1(null);
     const fd = new FormData();
-    fd.append("caso_id", casoId); fd.append("urgencia", urgencia);
-    fd.append("url_web", webUrl); if (tcUrl) fd.append("url_tc", tcUrl);
+    fd.append("urgencia", urgencia);
+    fd.append("web_url", webUrl); if (tcUrl) fd.append("tc_url", tcUrl);
     fd.append("empresa_md", empresaFile); fd.append("certificado_pdf", certFile);
     try {
       const r = await fetch(`${API}/run-upload/${casoId}`, { method: "POST", body: fd });
