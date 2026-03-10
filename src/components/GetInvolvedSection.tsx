@@ -131,12 +131,12 @@ const GetInvolvedSection = () => {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Replace REPLACE_BUILDER_FORM_ID with your Formspree endpoint for builder applications
+                  // Replace mjgagqqv with your Formspree endpoint for builder applications
                   validateAndSubmit(
                     builderForm,
                     setBuilderForm,
                     ["fullName", "email", "profession", "expertise"],
-                    "https://formspree.io/f/REPLACE_BUILDER_FORM_ID",
+                    "https://formspree.io/f/mjgagqqv",
                     "builder-application"
                   );
                 }}
@@ -261,12 +261,12 @@ const GetInvolvedSection = () => {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Replace REPLACE_REQUEST_FORM_ID with your Formspree endpoint for agent requests
+                  // Replace xdawarrk with your Formspree endpoint for agent requests
                   validateAndSubmit(
                     requestForm,
                     setRequestForm,
                     ["email", "service"],
-                    "https://formspree.io/f/REPLACE_REQUEST_FORM_ID",
+                    "https://formspree.io/f/xdawarrk",
                     "agent-request"
                   );
                 }}
@@ -409,7 +409,7 @@ const GetInvolvedSection = () => {
                     teamForm,
                     setTeamForm,
                     ["fullName", "email", "portfolio"],
-                    "https://formspree.io/f/REPLACE_TEAM_FORM_ID",
+                    "https://formspree.io/f/mlgpgyyb",
                     "team-application"
                   );
                 }}
