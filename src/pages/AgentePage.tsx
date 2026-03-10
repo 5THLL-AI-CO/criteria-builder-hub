@@ -142,7 +142,7 @@ function AgentApp() {
     fd.append("url_web", webUrl); if (tcUrl) fd.append("url_tc", tcUrl);
     fd.append("empresa_md", empresaFile); fd.append("certificado_pdf", certFile);
     try {
-      const r = await fetch(`${API}/run/${casoId}`, { method: "POST", body: fd });
+      const r = await fetch(`${API}/run-upload/${casoId}`, { method: "POST", body: fd });
       const d = await r.json();
       if (r.ok) { doneTab(1); enableTab(2); setStep(2); iniciarProgreso(casoId); }
       else setAlert1({ type: "error", msg: d.detail || JSON.stringify(d) });
@@ -181,7 +181,7 @@ function AgentApp() {
 
   async function aprobarFormulario() {
     try {
-      const r = await fetch(`${API}/run/${casoId}/aprobar-form`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const r = await fetch(`${API}/run-upload/${casoId}/aprobar-form`, { method: "POST", headers: { "Content-Type": "application/json" } });
       const d = await r.json();
       if (r.ok && d.kiroku_form_url) {
         doneTab(3); enableTab(4); setStep(4);
