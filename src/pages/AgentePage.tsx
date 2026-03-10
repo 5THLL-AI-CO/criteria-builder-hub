@@ -166,7 +166,7 @@ function AgentApp() {
         else if (s.includes("nodo_5") || s.includes("preguntas")) idx = 4;
         setProgStep(idx + 1); setProgWidth(`${steps[idx]?.pct || 95}%`);
         setEta(`~${steps[idx]?.time || 120}s restantes`);
-        if (s === "ESPERANDO_APROBACION" || s === "COMPLETO" || s.includes("form")) {
+        if (s === "esperando_aprobacion" || s === "ESPERANDO_APROBACION" || s === "completo" || s === "COMPLETO" || s.includes("form")) {
           clearInterval(iv); setProgWidth("100%"); setProgStep(6); setEta("✓ Completado");
           await cargarResultados(caso); doneTab(2); enableTab(3); setStep(3);
         }
