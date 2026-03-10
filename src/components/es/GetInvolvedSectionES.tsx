@@ -84,7 +84,7 @@ const GetInvolvedSectionES = () => {
                 <p>Solicitud recibida. Usamos cada envío para priorizar qué agentes construir. Te notificaremos cuando un agente coincidente se lance.</p>
               </div>
             ) : (
-              <form onSubmit={(e) => { e.preventDefault(); validateAndSubmit(requestForm, setRequestForm, ["email", "service"], "https://formspree.io/f/REPLACE_REQUEST_FORM_ID", "agent-request"); }} className="flex flex-col gap-4">
+              <form onSubmit={(e) => { e.preventDefault(); validateAndSubmit(requestForm, setRequestForm, ["email", "service"], "https://formspree.io/f/xdawarrk", "agent-request"); }} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-text-secondary text-sm mb-1.5">Soy:</label>
                   <div className="flex gap-2">
@@ -139,7 +139,7 @@ const GetInvolvedSectionES = () => {
                 <p>Gracias por tu interés. Revisaremos tu perfil y te contactaremos si hay un ajuste.</p>
               </div>
             ) : (
-              <form onSubmit={(e) => { e.preventDefault(); validateAndSubmit(teamForm, setTeamForm, ["fullName", "email", "portfolio"], "https://formspree.io/f/REPLACE_TEAM_FORM_ID", "team-application"); }} className="flex flex-col gap-4">
+              <form onSubmit={(e) => { e.preventDefault(); validateAndSubmit(teamForm, setTeamForm, ["fullName", "email", "portfolio"], "https://formspree.io/f/mlgpgyyb", "team-application"); }} className="flex flex-col gap-4">
                 <div><label className="block text-text-secondary text-sm mb-1.5">Nombre completo *</label><input type="text" placeholder="Tu nombre completo" value={teamForm.data.fullName || ""} onChange={(e) => handleInputChange(setTeamForm, "fullName", e.target.value)} className={inputClasses(teamForm.errors.fullName)} />{teamForm.errors.fullName && <p className="text-destructive text-xs mt-1">Obligatorio</p>}</div>
                 <div><label className="block text-text-secondary text-sm mb-1.5">Correo electrónico *</label><input type="email" placeholder="tu@email.com" value={teamForm.data.email || ""} onChange={(e) => handleInputChange(setTeamForm, "email", e.target.value)} className={inputClasses(teamForm.errors.email)} />{teamForm.errors.email && <p className="text-destructive text-xs mt-1">Obligatorio</p>}</div>
                 <div>
