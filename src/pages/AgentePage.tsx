@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-const API = "http://104.238.214.30:8000";
+const API = "https://api.criteria.work";
 const ACCESS_PASSWORD = "critairia2026";
 
 // ─── TYPES ───────────────────────────────────────────────────────
