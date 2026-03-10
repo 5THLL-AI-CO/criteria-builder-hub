@@ -57,7 +57,7 @@ const AgentDetailModal = ({ isOpen, onClose, agent }: AgentDetailModalProps) => 
 
     try {
       // Replace REPLACE_REQUEST_FORM_ID with your Formspree endpoint for agent requests
-      const response = await fetch("https://formspree.io/f/REPLACE_REQUEST_FORM_ID", {
+      const response = await fetch("https://formspree.io/f/xdawarrk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
