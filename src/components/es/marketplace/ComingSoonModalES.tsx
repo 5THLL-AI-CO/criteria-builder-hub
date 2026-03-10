@@ -27,7 +27,7 @@ const ComingSoonModalES = ({ isOpen, onClose, agentName, category }: ComingSoonM
     setIsSubmitting(true);
     try {
       // Replace REPLACE_REQUEST_FORM_ID with your Formspree endpoint
-      const response = await fetch("https://formspree.io/f/REPLACE_REQUEST_FORM_ID", {
+      const response = await fetch("https://formspree.io/f/xdawarrk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, _agent: agentName, _type: "waitlist" }),
