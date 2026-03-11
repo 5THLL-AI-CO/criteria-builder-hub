@@ -159,14 +159,13 @@ function AgentApp() {
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${API}/status/${caso}`);
-        const d = await r.json(); const s = d.estado || "";
-        if (s.includes("nodo_2") || s.includes("web")) idx = 1;
-        else if (s.includes("nodo_3") || s.includes("riesgo")) idx = 2;
-        else if (s.includes("nodo_4")) idx = 3;
-        else if (s.includes("nodo_5") || s.includes("preguntas")) idx = 4;
+        const d = await r.json();
+        const s = (d.fase_actual || d.estado || "").toLowerCase();
+        const tieneSchema = !!d.tiene_schema;
+        if (s.includes("en_proceso")) idx = Math.min(idx + 1, 3);
         setProgStep(idx + 1); setProgWidth(`${steps[idx]?.pct || 95}%`);
         setEta(`~${steps[idx]?.time || 120}s restantes`);
-        if (s === "esperando_aprobacion" || s === "ESPERANDO_APROBACION" || s === "completo" || s === "COMPLETO" || s.includes("form")) {
+        if (s === "esperando_aprobacion" || s === "completo" || tieneSchema) {
           clearInterval(iv); setProgWidth("100%"); setProgStep(6); setEta("✓ Completado");
           await cargarResultados(caso); doneTab(2); enableTab(3); setStep(3);
         }
