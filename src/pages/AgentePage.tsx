@@ -151,26 +151,39 @@ function AgentApp() {
   }
 
   function iniciarProgreso(caso: string) {
-    const steps = [
-      { pct: 15, time: 15 }, { pct: 35, time: 30 },
-      { pct: 60, time: 60 }, { pct: 80, time: 90 }, { pct: 95, time: 120 },
-    ];
-    let idx = 0; setProgStep(1); setProgWidth(`${steps[0].pct}%`);
+    // Tiempos visuales fijos (igual que el HTML del VPS)
+    const progTimes = [0, 70, 145, 225, 315]; // segundos desde inicio
+    const progPcts  = [15, 35, 58, 78, 94];
+    const progEtas  = ["~7 min", "~5 min", "~3 min", "~2 min", "Finalizando..."];
+
+    setProgStep(1); setProgWidth(`${progPcts[0]}%`); setEta(progEtas[0]);
+
+    // Timeouts visuales — avanzan independiente del backend
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i < progTimes.length; i++) {
+      const t = setTimeout(() => {
+        setProgStep(i + 1);
+        setProgWidth(`${progPcts[i]}%`);
+        setEta(progEtas[i]);
+      }, progTimes[i] * 1000);
+      timers.push(t);
+    }
+
+    // Polling solo para detectar cuando termina
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${API}/status/${caso}`);
         const d = await r.json();
         const s = (d.fase_actual || d.estado || "").toLowerCase();
         const tieneSchema = !!d.tiene_schema;
-        if (s.includes("en_proceso")) idx = Math.min(idx + 1, 3);
-        setProgStep(idx + 1); setProgWidth(`${steps[idx]?.pct || 95}%`);
-        setEta(`~${steps[idx]?.time || 120}s restantes`);
         if (s === "esperando_aprobacion" || s === "completo" || tieneSchema) {
-          clearInterval(iv); setProgWidth("100%"); setProgStep(6); setEta("✓ Completado");
+          clearInterval(iv);
+          timers.forEach(t => clearTimeout(t));
+          setProgWidth("100%"); setProgStep(6); setEta("✓ Completado");
           await cargarResultados(caso); doneTab(2); enableTab(3); setStep(3);
         }
       } catch {}
-    }, 3000);
+    }, 5000);
   }
 
   async function cargarResultados(caso: string) {
