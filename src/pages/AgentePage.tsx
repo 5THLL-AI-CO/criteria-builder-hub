@@ -97,8 +97,8 @@ function AgentApp() {
   const [stepEnabled, setStepEnabled] = useState<number[]>([1]);
   const [online, setOnline] = useState<null | boolean>(null);
 
-  const [casoId, setCasoId] = useState(`caso-${Date.now().toString(36).slice(-4)}`);
-  const [urgencia, setUrgencia] = useState("Alta");
+  const [nombreEmpresa, setNombreEmpresa] = useState("");
+  const [casoId, setCasoId] = useState("");
   const [webUrl, setWebUrl] = useState("");
   const [tcUrl, setTcUrl] = useState("");
   const [empresaFile, setEmpresaFile] = useState<File | null>(null);
@@ -132,19 +132,21 @@ function AgentApp() {
   const enableTab = (n: number) => setStepEnabled(prev => [...prev.filter(x => x !== n), n]);
 
   async function iniciarAnalisis() {
-    if (!casoId || !webUrl || !empresaFile || !certFile) {
+    if (!nombreEmpresa || !webUrl || !empresaFile || !certFile) {
       setAlert1({ type: "error", msg: "Completa todos los campos requeridos (*)" });
       return;
     }
+    const id = nombreEmpresa.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-tc";
+    setCasoId(id);
     setLoading1(true); setAlert1(null);
     const fd = new FormData();
+    fd.append("nombre_empresa", nombreEmpresa);
     fd.append("web_url", webUrl); if (tcUrl) fd.append("tc_url", tcUrl);
-    fd.append("urgencia", urgencia);
     fd.append("empresa_md", empresaFile); fd.append("certificado_pdf", certFile);
     try {
-      const r = await fetch(`${API}/run-upload/${casoId}`, { method: "POST", body: fd });
+      const r = await fetch(`${API}/run-upload/${id}`, { method: "POST", body: fd });
       const d = await r.json();
-      if (r.ok || r.status === 409) { doneTab(1); enableTab(2); setStep(2); iniciarProgreso(casoId); }
+      if (r.ok || r.status === 409) { doneTab(1); enableTab(2); setStep(2); iniciarProgreso(id); }
       else setAlert1({ type: "error", msg: typeof d.detail === "string" ? d.detail : JSON.stringify(d.detail || d) });
     } catch (e: any) { setAlert1({ type: "error", msg: `Error de conexión: ${e.message}` }); }
     setLoading1(false);
@@ -345,16 +347,15 @@ function AgentApp() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 4 }}>
-              <CField label="ID del Caso *">
-                <CInput value={casoId} onChange={e => setCasoId(e.target.value)} placeholder="ej: empresa-001" />
-              </CField>
-              <CField label="Urgencia">
-                <CSelect value={urgencia} onChange={e => setUrgencia(e.target.value)}>
-                  <option>Alta</option><option>Crítica</option><option>Media</option><option>Baja</option>
-                </CSelect>
-              </CField>
-            </div>
+            <CField label="Nombre de la Empresa *">
+              <CInput value={nombreEmpresa} onChange={e => setNombreEmpresa(e.target.value)} placeholder="ej: Niilo / DATSTARTUP S.A.S." />
+            </CField>
+
+            <CField label="ID del Caso (auto-generado)">
+              <div style={{ padding: "11px 14px", border: "1px solid #1E1E3A", borderRadius: 6, background: "#0D0D1E", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#4A4A6A" }}>
+                {nombreEmpresa ? nombreEmpresa.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-tc" : "nombre-empresa-tc"}
+              </div>
+            </CField>
 
             <CField label="URL del Sitio Web *">
               <CInput type="url" value={webUrl} onChange={e => setWebUrl(e.target.value)} placeholder="https://www.empresa.com" />
@@ -551,7 +552,7 @@ function AgentApp() {
               <OutlineButton onClick={() => descargar(`${API}/borrador/${casoId}`, `borrador-tc-${casoId}.md`)}>
                 ↓ Descargar borrador T&C
               </OutlineButton>
-              <OutlineButton onClick={() => { setStep(1); setStepDone([]); setStepEnabled([1]); setResultado(null); setResultado5(null); setLogs([]); setCasoId(`caso-${Date.now().toString(36).slice(-4)}`); }}>
+              <OutlineButton onClick={() => { setStep(1); setStepDone([]); setStepEnabled([1]); setResultado(null); setResultado5(null); setLogs([]); setNombreEmpresa(""); setCasoId(""); }}>
                 Nuevo caso
               </OutlineButton>
             </div>
