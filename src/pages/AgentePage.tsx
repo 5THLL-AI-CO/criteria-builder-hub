@@ -112,7 +112,10 @@ function AgentApp() {
 
   const [resultado, setResultado] = useState<any>(null);
 
-  const [formUrl, setFormUrl] = useState("—");
+  // ── FIX: URLs de formularios propios ──
+  const [formUrlM0, setFormUrlM0] = useState("—");
+  const [formUrlRiesgos, setFormUrlRiesgos] = useState("—");
+
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [pollingState, setPollingState] = useState(1);
   const [showProgressBar, setShowProgressBar] = useState(false);
@@ -153,14 +156,12 @@ function AgentApp() {
   }
 
   function iniciarProgreso(caso: string) {
-    // Tiempos visuales fijos (igual que el HTML del VPS)
-    const progTimes = [0, 70, 145, 225, 315]; // segundos desde inicio
+    const progTimes = [0, 70, 145, 225, 315];
     const progPcts  = [15, 35, 58, 78, 94];
     const progEtas  = ["~7 min", "~5 min", "~3 min", "~2 min", "Finalizando..."];
 
     setProgStep(1); setProgWidth(`${progPcts[0]}%`); setEta(progEtas[0]);
 
-    // Timeouts visuales — avanzan independiente del backend
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 1; i < progTimes.length; i++) {
       const t = setTimeout(() => {
@@ -171,7 +172,6 @@ function AgentApp() {
       timers.push(t);
     }
 
-    // Polling solo para detectar cuando termina
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${API}/status/${caso}`);
@@ -193,13 +193,20 @@ function AgentApp() {
     const data = await r.json(); setResultado(data.resultado || {});
   }
 
+  // ── FIX: aprobarFormulario usa form_url_m0 y form_url_riesgos ──
   async function aprobarFormulario() {
     try {
-      const r = await fetch(`${API}/run/${casoId}/aprobar-form`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const r = await fetch(`${API}/run/${casoId}/aprobar-form`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
       const d = await r.json();
-      if (r.ok && d.kiroku_form_url) {
+      if (r.ok) {
+        const urlM0 = d.form_url_m0 || `${API}/form/${casoId}/m0`;
+        const urlRiesgos = d.form_url_riesgos || `${API}/form/${casoId}/riesgos`;
+        setFormUrlM0(urlM0);
+        setFormUrlRiesgos(urlRiesgos);
         doneTab(3); enableTab(4); setStep(4);
-        setFormUrl(d.kiroku_form_url); startPolling(casoId);
       }
     } catch (e: any) { console.error(e); }
   }
@@ -213,7 +220,7 @@ function AgentApp() {
   async function startPolling(caso: string) {
     let pState = 1;
     addLog("✓", "Análisis completado", C.success);
-    addLog("✓", "Formulario publicado y enviado al cliente", C.success);
+    addLog("✓", "Formularios listos para el cliente", C.success);
     addLog("○", "Esperando que el cliente complete el formulario...", C.warning);
     let secs = 5;
     countdownRef.current = setInterval(() => { secs--; setCountdown(secs); if (secs <= 0) secs = 5; }, 1000);
@@ -277,7 +284,7 @@ function AgentApp() {
         input::placeholder { color: #4A4A6A; }
         input:focus, select:focus { border-color: #6C3CE0 !important; outline: none; }
         button:hover { opacity: 0.9; }
-        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #12122A; }
         ::-webkit-scrollbar-thumb { background: #1E1E3A; border-radius: 3px; }
       `}</style>
@@ -285,9 +292,7 @@ function AgentApp() {
       {/* HEADER */}
       <header style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 40px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontFamily: C.fontDisplay, fontSize: 20, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textPrimary }}>
-            CRITERIA
-          </span>
+          <span style={{ fontFamily: C.fontDisplay, fontSize: 20, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textPrimary }}>CRITERIA</span>
           <span style={{ fontFamily: C.fontMono, fontSize: 10, color: C.textTertiary, letterSpacing: "0.15em", textTransform: "uppercase", paddingLeft: 16, borderLeft: `1px solid ${C.border}` }}>
             Agente Legal TC v1.1
           </span>
@@ -331,45 +336,34 @@ function AgentApp() {
         {/* ── PANEL 1: DATOS ── */}
         {step === 1 && (
           <div>
-            <Label style={{ fontFamily: C.fontMono, color: C.textTertiary, fontSize: 11, letterSpacing: "0.15em", marginBottom: 8, display: "block" }}>
-              NUEVO CASO
-            </Label>
-            <h1 style={{ fontFamily: C.fontDisplay, fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 8, lineHeight: 1.2 }}>
-              Datos del cliente
-            </h1>
+            <Label style={{ fontFamily: C.fontMono, color: C.textTertiary, fontSize: 11, letterSpacing: "0.15em", marginBottom: 8, display: "block" }}>NUEVO CASO</Label>
+            <h1 style={{ fontFamily: C.fontDisplay, fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 8, lineHeight: 1.2 }}>Datos del cliente</h1>
             <p style={{ color: C.textSecondary, fontSize: 14, marginBottom: 36, lineHeight: 1.7 }}>
               Sube los documentos del cliente e ingresa los datos básicos. El análisis legal toma entre 5 y 8 minutos.
             </p>
-
             {alert1 && (
               <div style={{ padding: "12px 16px", borderRadius: 6, fontSize: 13, marginBottom: 20, background: "rgba(192,57,43,0.1)", border: `1px solid rgba(192,57,43,0.3)`, color: "#ff6b6b" }}>
                 {alert1.msg}
               </div>
             )}
-
             <CField label="Nombre de la Empresa *">
               <CInput value={nombreEmpresa} onChange={e => setNombreEmpresa(e.target.value)} placeholder="ej: Niilo / DATSTARTUP S.A.S." />
             </CField>
-
             <CField label="ID del Caso (auto-generado)">
               <div style={{ padding: "11px 14px", border: "1px solid #1E1E3A", borderRadius: 6, background: "#0D0D1E", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#4A4A6A" }}>
                 {nombreEmpresa ? nombreEmpresa.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-tc" : "nombre-empresa-tc"}
               </div>
             </CField>
-
             <CField label="URL del Sitio Web *">
               <CInput type="url" value={webUrl} onChange={e => setWebUrl(e.target.value)} placeholder="https://www.empresa.com" />
             </CField>
-
             <CField label="URL de Términos y Condiciones (opcional)">
               <CInput type="url" value={tcUrl} onChange={e => setTcUrl(e.target.value)} placeholder="https://www.empresa.com/terminos" />
             </CField>
-
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 4 }}>
               <UploadZone label="Archivo empresa.md *" accept=".md,.txt" icon="📝" hint="Descripción de la empresa" file={empresaFile} onFile={setEmpresaFile} />
               <UploadZone label="Certificado de Existencia (PDF) *" accept=".pdf" icon="📄" hint="Cámara de Comercio" file={certFile} onFile={setCertFile} />
             </div>
-
             <div style={{ marginTop: 32 }}>
               <CTAButton onClick={iniciarAnalisis} disabled={loading1}>
                 {loading1 ? "Iniciando análisis..." : "Iniciar análisis →"}
@@ -385,7 +379,6 @@ function AgentApp() {
             <Label style={{ fontFamily: C.fontMono, color: C.textTertiary, fontSize: 11, letterSpacing: "0.15em", marginBottom: 8, display: "block" }}>PROCESANDO</Label>
             <h1 style={{ fontFamily: C.fontDisplay, fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>Analizando empresa</h1>
             <p style={{ color: C.textSecondary, fontSize: 14, marginBottom: 36, lineHeight: 1.7 }}>El agente está procesando los documentos y generando el análisis legal completo.</p>
-
             <SurfaceCard>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <span style={{ fontFamily: C.fontDisplay, fontSize: 15, fontWeight: 600, color: C.textPrimary }}>Progreso del análisis</span>
@@ -469,43 +462,84 @@ function AgentApp() {
           </div>
         )}
 
-        {/* ── PANEL 4: FORMULARIO ENVIADO ── */}
+        {/* ── PANEL 4: FORMULARIO — URLS PROPIAS ── */}
         {step === 4 && (
           <div>
             <CasoBadge casoId={casoId} />
-            <Label style={{ fontFamily: C.fontMono, color: C.textTertiary, fontSize: 11, letterSpacing: "0.15em", marginBottom: 8, display: "block" }}>ESPERANDO CLIENTE</Label>
-            <h1 style={{ fontFamily: C.fontDisplay, fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>Formulario enviado</h1>
-            <p style={{ color: C.textSecondary, fontSize: 14, marginBottom: 36, lineHeight: 1.7 }}>Envía esta URL al cliente para que valide el entendimiento operativo.</p>
+            <Label style={{ fontFamily: C.fontMono, color: C.textTertiary, fontSize: 11, letterSpacing: "0.15em", marginBottom: 8, display: "block" }}>FORMULARIOS LISTOS</Label>
+            <h1 style={{ fontFamily: C.fontDisplay, fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>Enviar al cliente</h1>
+            <p style={{ color: C.textSecondary, fontSize: 14, marginBottom: 36, lineHeight: 1.7 }}>
+              Comparte los dos formularios con el cliente en este orden. Primero M0, luego Riesgos.
+            </p>
 
-            <SurfaceCard style={{ marginBottom: 20 }}>
-              <div style={{ fontFamily: C.fontMono, fontSize: 10, color: C.textTertiary, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>URL del formulario</div>
-              <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontFamily: C.fontMono, fontSize: 11, wordBreak: "break-all", marginBottom: 14, color: C.textSecondary }}>
-                {formUrl}
+            {/* FORMULARIO M0 */}
+            <SurfaceCard style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ background: "rgba(108,60,224,0.15)", border: "1px solid rgba(108,60,224,0.3)", borderRadius: 4, padding: "3px 10px", fontFamily: C.fontMono, fontSize: 10, color: "#a78bfa", letterSpacing: "0.1em" }}>
+                  PASO 1
+                </div>
+                <span style={{ fontFamily: C.fontDisplay, fontSize: 15, fontWeight: 600, color: C.textPrimary }}>Validación Operativa (M0)</span>
               </div>
-              <button onClick={() => navigator.clipboard.writeText(formUrl)}
-                style={{ background: C.ctaGradient, color: C.textPrimary, border: "none", borderRadius: 5, padding: "9px 18px", fontFamily: C.fontSans, fontSize: 12, fontWeight: 600, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Copiar URL
-              </button>
+              <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontFamily: C.fontMono, fontSize: 11, wordBreak: "break-all", marginBottom: 12, color: C.textSecondary }}>
+                {formUrlM0}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => navigator.clipboard.writeText(formUrlM0)}
+                  style={{ background: C.ctaGradient, color: C.textPrimary, border: "none", borderRadius: 5, padding: "9px 18px", fontFamily: C.fontSans, fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: "0.06em" }}>
+                  Copiar URL
+                </button>
+                <button onClick={() => window.open(formUrlM0, "_blank")}
+                  style={{ background: "transparent", color: C.textSecondary, border: `1px solid ${C.border}`, borderRadius: 5, padding: "9px 18px", fontFamily: C.fontSans, fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: "0.06em" }}>
+                  Abrir →
+                </button>
+              </div>
             </SurfaceCard>
 
+            {/* FORMULARIO RIESGOS */}
+            <SurfaceCard style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ background: "rgba(196,146,42,0.12)", border: "1px solid rgba(196,146,42,0.3)", borderRadius: 4, padding: "3px 10px", fontFamily: C.fontMono, fontSize: 10, color: C.warning, letterSpacing: "0.1em" }}>
+                  PASO 2
+                </div>
+                <span style={{ fontFamily: C.fontDisplay, fontSize: 15, fontWeight: 600, color: C.textPrimary }}>Levantamiento de Riesgos</span>
+              </div>
+              <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontFamily: C.fontMono, fontSize: 11, wordBreak: "break-all", marginBottom: 12, color: C.textSecondary }}>
+                {formUrlRiesgos}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => navigator.clipboard.writeText(formUrlRiesgos)}
+                  style={{ background: C.ctaGradient, color: C.textPrimary, border: "none", borderRadius: 5, padding: "9px 18px", fontFamily: C.fontSans, fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: "0.06em" }}>
+                  Copiar URL
+                </button>
+                <button onClick={() => window.open(formUrlRiesgos, "_blank")}
+                  style={{ background: "transparent", color: C.textSecondary, border: `1px solid ${C.border}`, borderRadius: 5, padding: "9px 18px", fontFamily: C.fontSans, fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: "0.06em" }}>
+                  Abrir →
+                </button>
+              </div>
+            </SurfaceCard>
+
+            {/* LOG DE ESTADO */}
             <SurfaceCard style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ background: "#0D0D20", padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontFamily: C.fontDisplay, fontSize: 14, fontWeight: 600, color: C.textPrimary }}>Estado del caso</span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: pollingState === 3 ? C.success : pollingState === 2 ? C.warning : "#6C3CE0", animation: pollingState === 3 ? "none" : "pulse 1.5s infinite" }} />
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: pollingState === 3 ? C.success : pollingState === 2 ? C.warning : C.accent, animation: pollingState === 3 ? "none" : "pulse 1.5s infinite" }} />
                   <span style={{ fontFamily: C.fontMono, fontSize: 10, color: C.textTertiary }}>
                     {pollingState === 3 ? "COMPLETADO" : pollingState === 2 ? "GENERANDO" : "ESPERANDO"}
                   </span>
                 </div>
               </div>
-              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, minHeight: 120 }}>
-                {logs.map((l, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13 }}>
-                    <span style={{ color: l.color, flexShrink: 0, fontFamily: C.fontMono, fontSize: 14 }}>{l.icon}</span>
-                    <span style={{ color: C.textTertiary, flexShrink: 0, fontFamily: C.fontMono, fontSize: 10, marginTop: 2 }}>{l.time}</span>
-                    <span style={{ color: l.color, flex: 1, fontSize: 13 }}>{l.text}</span>
-                  </div>
-                ))}
+              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, minHeight: 80 }}>
+                {logs.length === 0
+                  ? <div style={{ fontSize: 12, color: C.textTertiary, fontFamily: C.fontMono }}>Esperando actividad del cliente…</div>
+                  : logs.map((l, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13 }}>
+                      <span style={{ color: l.color, flexShrink: 0, fontFamily: C.fontMono, fontSize: 14 }}>{l.icon}</span>
+                      <span style={{ color: C.textTertiary, flexShrink: 0, fontFamily: C.fontMono, fontSize: 10, marginTop: 2 }}>{l.time}</span>
+                      <span style={{ color: l.color, flex: 1, fontSize: 13 }}>{l.text}</span>
+                    </div>
+                  ))
+                }
               </div>
               {showProgressBar && (
                 <div style={{ padding: "0 20px 16px" }}>
@@ -529,22 +563,18 @@ function AgentApp() {
           <div>
             <Label style={{ fontFamily: C.fontMono, color: C.textTertiary, fontSize: 11, letterSpacing: "0.15em", marginBottom: 8, display: "block" }}>ANÁLISIS COMPLETADO</Label>
             <h1 style={{ fontFamily: C.fontDisplay, fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>{casoId}</h1>
-
             <SurfaceCard style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontFamily: C.fontMono, fontSize: 11, color: C.textTertiary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Nivel de riesgo global</span>
               <NivelBadge nivel={nivel5} />
             </SurfaceCard>
-
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 32 }}>
               <SemaforoCard tipo="critico" num={(rd5.riesgos_criticos || []).length} label="Críticos" />
               <SemaforoCard tipo="importante" num={(rd5.riesgos_importantes || []).length} label="Importantes" />
               <SemaforoCard tipo="mejorable" num={(resultado5?.resultado?.discrepancias_marketing_vs_tc || []).length} label="Discrepancias" />
             </div>
-
             <div style={{ padding: "14px 18px", borderRadius: 6, fontSize: 13, marginBottom: 32, background: "rgba(108,60,224,0.08)", border: `1px solid rgba(108,60,224,0.2)`, color: C.textSecondary }}>
               El agente tiene todas las respuestas del cliente. El abogado puede proceder a redactar los T&C usando estos resultados como base.
             </div>
-
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <CTAButton onClick={() => descargar(`${API}/reporte/${casoId}`, `critairia-reporte-${casoId}.pdf`)}>
                 ↓ Descargar reporte PDF
@@ -570,67 +600,34 @@ function AgentApp() {
 // ─── HELPER COMPONENTS ────────────────────────────────────────────
 
 function GoogleFonts() {
-  return (
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;600;700&display=swap');`}</style>
-  );
+  return <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;600;700&display=swap');`}</style>;
 }
-
 function Label({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return <div style={style}>{children}</div>;
 }
-
 function SurfaceCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{ background: "#12122A", border: "1px solid #1E1E3A", borderRadius: 8, padding: 24, ...style }}>
-      {children}
-    </div>
-  );
+  return <div style={{ background: "#12122A", border: "1px solid #1E1E3A", borderRadius: 8, padding: 24, ...style }}>{children}</div>;
 }
-
 function SectionTitle({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{ fontSize: 14, fontWeight: 600, color: "#A0A0B8", marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid #1E1E3A", ...style }}>
-      {children}
-    </div>
-  );
+  return <div style={{ fontSize: 14, fontWeight: 600, color: "#A0A0B8", marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid #1E1E3A", ...style }}>{children}</div>;
 }
-
 function CField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", marginBottom: 8, color: "#A0A0B8", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>
-        {label}
-      </label>
+      <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", marginBottom: 8, color: "#A0A0B8", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>{label}</label>
       {children}
     </div>
   );
 }
-
 function CInput({ value, onChange, placeholder, type = "text" }: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; type?: string }) {
-  return (
-    <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-      style={{ width: "100%", padding: "11px 14px", border: "1px solid #1E1E3A", borderRadius: 6, background: "#0A0A1A", fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#FFFFFF", outline: "none", transition: "border-color 0.2s" }} />
-  );
+  return <input type={type} value={value} onChange={onChange} placeholder={placeholder} style={{ width: "100%", padding: "11px 14px", border: "1px solid #1E1E3A", borderRadius: 6, background: "#0A0A1A", fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#FFFFFF", outline: "none", transition: "border-color 0.2s" }} />;
 }
-
-function CSelect({ value, onChange, children }: { value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; children: React.ReactNode }) {
-  return (
-    <select value={value} onChange={onChange}
-      style={{ width: "100%", padding: "11px 14px", border: "1px solid #1E1E3A", borderRadius: 6, background: "#0A0A1A", fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#FFFFFF", outline: "none" }}>
-      {children}
-    </select>
-  );
-}
-
 function UploadZone({ label, accept, icon, hint, file, onFile }: { label: string; accept: string; icon: string; hint: string; file: File | null; onFile: (f: File) => void }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", marginBottom: 8, color: "#A0A0B8", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>
-        {label}
-      </label>
+      <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", marginBottom: 8, color: "#A0A0B8", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>{label}</label>
       <div style={{ border: `1px dashed ${file ? "#2E7D5E" : "#1E1E3A"}`, borderRadius: 8, padding: "24px 20px", textAlign: "center", cursor: "pointer", background: file ? "rgba(46,125,94,0.08)" : "#12122A", position: "relative", borderStyle: file ? "solid" : "dashed", transition: "all 0.2s" }}>
-        <input type="file" accept={accept} onChange={e => e.target.files?.[0] && onFile(e.target.files[0])}
-          style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+        <input type="file" accept={accept} onChange={e => e.target.files?.[0] && onFile(e.target.files[0])} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
         <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
         <div style={{ fontSize: 12, color: "#4A4A6A" }}>{hint}</div>
         {file && <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#4ade80", marginTop: 6 }}>✓ {file.name}</div>}
@@ -638,15 +635,9 @@ function UploadZone({ label, accept, icon, hint, file, onFile }: { label: string
     </div>
   );
 }
-
 function CasoBadge({ casoId }: { casoId: string }) {
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#12122A", border: "1px solid #1E1E3A", color: "#A0A0B8", padding: "5px 12px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, marginBottom: 20, letterSpacing: "0.05em" }}>
-      <span style={{ color: "#4A4A6A" }}>caso /</span> {casoId}
-    </div>
-  );
+  return <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#12122A", border: "1px solid #1E1E3A", color: "#A0A0B8", padding: "5px 12px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, marginBottom: 20, letterSpacing: "0.05em" }}><span style={{ color: "#4A4A6A" }}>caso /</span> {casoId}</div>;
 }
-
 function NivelBadge({ nivel }: { nivel: string }) {
   const configs: Record<string, { bg: string; color: string }> = {
     ALTO: { bg: "rgba(192,57,43,0.15)", color: "#ff6b6b" },
@@ -654,13 +645,8 @@ function NivelBadge({ nivel }: { nivel: string }) {
     BAJO: { bg: "rgba(46,125,94,0.15)", color: "#4ade80" },
   };
   const cfg = configs[nivel] || { bg: "rgba(74,74,106,0.2)", color: "#A0A0B8" };
-  return (
-    <div style={{ padding: "5px 14px", borderRadius: 4, fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase", background: cfg.bg, color: cfg.color }}>
-      {nivel}
-    </div>
-  );
+  return <div style={{ padding: "5px 14px", borderRadius: 4, fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase", background: cfg.bg, color: cfg.color }}>{nivel}</div>;
 }
-
 function SemaforoCard({ tipo, num, label }: { tipo: string; num: number; label: string }) {
   const configs: Record<string, { color: string; bg: string }> = {
     critico: { color: "#ff6b6b", bg: "rgba(192,57,43,0.08)" },
@@ -668,14 +654,8 @@ function SemaforoCard({ tipo, num, label }: { tipo: string; num: number; label: 
     mejorable: { color: "#4ade80", bg: "rgba(46,125,94,0.08)" },
   };
   const cfg = configs[tipo] || { color: "#A0A0B8", bg: "transparent" };
-  return (
-    <div style={{ background: cfg.bg, border: `1px solid ${cfg.color}22`, borderRadius: 8, padding: 20, textAlign: "center" }}>
-      <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1, marginBottom: 6, color: cfg.color }}>{num}</div>
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600, color: cfg.color, fontFamily: "'JetBrains Mono', monospace" }}>{label}</div>
-    </div>
-  );
+  return <div style={{ background: cfg.bg, border: `1px solid ${cfg.color}22`, borderRadius: 8, padding: 20, textAlign: "center" }}><div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1, marginBottom: 6, color: cfg.color }}>{num}</div><div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600, color: cfg.color, fontFamily: "'JetBrains Mono', monospace" }}>{label}</div></div>;
 }
-
 function RiesgoItem({ riesgo }: { riesgo: any }) {
   const [open, setOpen] = useState(false);
   const isCrit = riesgo._t === "critico";
@@ -692,21 +672,9 @@ function RiesgoItem({ riesgo }: { riesgo: any }) {
     </div>
   );
 }
-
 function CTAButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button onClick={onClick} disabled={disabled}
-      style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", border: "none", borderRadius: 6, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", background: disabled ? "#1E1E3A" : "linear-gradient(135deg, #5A32B8, #2D5FA0)", color: disabled ? "#4A4A6A" : "#FFFFFF", textTransform: "uppercase", letterSpacing: "0.08em", transition: "opacity 0.2s" }}>
-      {children}
-    </button>
-  );
+  return <button onClick={onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", border: "none", borderRadius: 6, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", background: disabled ? "#1E1E3A" : "linear-gradient(135deg, #5A32B8, #2D5FA0)", color: disabled ? "#4A4A6A" : "#FFFFFF", textTransform: "uppercase", letterSpacing: "0.08em", transition: "opacity 0.2s" }}>{children}</button>;
 }
-
 function OutlineButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button onClick={onClick}
-      style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", border: "1px solid #1E1E3A", borderRadius: 6, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", background: "transparent", color: "#A0A0B8", textTransform: "uppercase", letterSpacing: "0.08em", transition: "all 0.2s" }}>
-      {children}
-    </button>
-  );
+  return <button onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", border: "1px solid #1E1E3A", borderRadius: 6, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", background: "transparent", color: "#A0A0B8", textTransform: "uppercase", letterSpacing: "0.08em", transition: "all 0.2s" }}>{children}</button>;
 }
